@@ -36,7 +36,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.annotation.Embedded;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Transient;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.geo.Point;
@@ -45,7 +47,6 @@ import org.springframework.data.mongodb.core.DocumentTestUtils;
 import org.springframework.data.mongodb.core.Person;
 import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
 import org.springframework.data.mongodb.core.geo.GeoJsonPolygon;
-import org.springframework.data.mongodb.core.mapping.BasicMongoPersistentEntity;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -998,6 +999,50 @@ public class QueryMapperUnitTests {
 		assertThat(target).isEqualTo(org.bson.Document.parse("{\"$text\" : { \"$search\" : \"test\" }}"));
 	}
 
+	@Test // DATAMONGO-1902
+	void rendersQueryOnEmbeddedCorrectly() {
+
+		Query source = query(Criteria.where("embeddableValue.stringValue").is("test"));
+
+		org.bson.Document target = mapper.getMappedObject(source.getQueryObject(),
+				context.getPersistentEntity(WithEmbedded.class));
+
+		assertThat(target).isEqualTo(new org.bson.Document("stringValue", "test"));
+	}
+
+	@Test // DATAMONGO-1902
+	void rendersQueryOnPrefixedEmbeddedCorrectly() {
+
+		Query source = query(Criteria.where("embeddableValue.stringValue").is("test"));
+
+		org.bson.Document target = mapper.getMappedObject(source.getQueryObject(),
+				context.getPersistentEntity(WithPrefixedEmbedded.class));
+
+		assertThat(target).isEqualTo(new org.bson.Document("prefix-stringValue", "test"));
+	}
+
+	@Test // DATAMONGO-1902
+	void rendersQueryOnNestedEmbeddedCorrectly() {
+
+		Query source = query(Criteria.where("withEmbedded.embeddableValue.stringValue").is("test"));
+
+		org.bson.Document target = mapper.getMappedObject(source.getQueryObject(),
+				context.getPersistentEntity(WrapperAroundWithEmbedded.class));
+
+		assertThat(target).isEqualTo(new org.bson.Document("withEmbedded.stringValue", "test"));
+	}
+
+	@Test // DATAMONGO-1902
+	void rendersQueryOnNestedPrefixedEmbeddedCorrectly() {
+
+		Query source = query(Criteria.where("withPrefixedEmbedded.embeddableValue.stringValue").is("test"));
+
+		org.bson.Document target = mapper.getMappedObject(source.getQueryObject(),
+				context.getPersistentEntity(WrapperAroundWithEmbedded.class));
+
+		assertThat(target).isEqualTo(new org.bson.Document("withPrefixedEmbedded.prefix-stringValue", "test"));
+	}
+
 	class WithDeepArrayNesting {
 
 		List<WithNestedArray> level0;
@@ -1181,4 +1226,38 @@ public class QueryMapperUnitTests {
 			this.value = value;
 		}
 	}
+
+	static class WrapperAroundWithEmbedded {
+
+		String someValue;
+		WithEmbedded withEmbedded;
+		WithPrefixedEmbedded withPrefixedEmbedded;
+	}
+
+	static class WithEmbedded {
+
+		String id;
+
+		@Embedded.Nullable EmbeddableType embeddableValue;
+	}
+
+	static class WithPrefixedEmbedded {
+
+		String id;
+
+		@Embedded.Nullable("prefix-") EmbeddableType embeddableValue;
+	}
+
+	static class EmbeddableType {
+
+		String stringValue;
+		List<String> listValue;
+
+		@Field("with-at-field-annotation") //
+		String atFieldAnnotatedValue;
+
+		@Transient //
+		String transientValue;
+	}
+
 }
