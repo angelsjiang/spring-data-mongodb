@@ -32,7 +32,6 @@ import org.bson.conversions.Bson;
 import org.bson.types.Code;
 import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -1050,7 +1049,6 @@ public class QueryMapperUnitTests {
 	}
 
 	@Test // DATAMONGO-1902
-	@Disabled
 	void rendersQueryOnNestedPrefixedEmbeddedObjectCorrectly() {
 
 		EmbeddableType embeddableType = new EmbeddableType();
@@ -1060,7 +1058,8 @@ public class QueryMapperUnitTests {
 		org.bson.Document target = mapper.getMappedObject(source.getQueryObject(),
 				context.getPersistentEntity(WrapperAroundWithEmbedded.class));
 
-		assertThat(target).isEqualTo(new org.bson.Document("withPrefixedEmbedded", new org.bson.Document("prefix-stringValue", "test")));
+		assertThat(target)
+				.isEqualTo(new org.bson.Document("withPrefixedEmbedded", new org.bson.Document("prefix-stringValue", "test")));
 	}
 
 	@Test // DATAMONGO-1902
