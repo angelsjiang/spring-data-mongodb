@@ -79,6 +79,15 @@ public class UntypedExampleMatcherUnitTests {
 	}
 
 	@Test // DATAMONGO-1768
+	public void ignoreCaseShouldReturnFalseWhenIgnoreCaseSetToFalse() {
+
+		matcher = UntypedExampleMatcher.matching().withIgnoreCase(false);
+
+		assertThat(matcher.isIgnoreCaseEnabled()).isFalse();
+	}
+
+
+	@Test // DATAMONGO-1768
 	public void nullHandlerShouldReturnInclude() throws Exception {
 
 		matcher = UntypedExampleMatcher.matching().withIncludeNullValues();
