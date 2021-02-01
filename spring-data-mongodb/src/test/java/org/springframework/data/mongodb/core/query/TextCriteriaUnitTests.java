@@ -46,7 +46,7 @@ class TextCriteriaUnitTests {
 		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$language\" : \"spanish\" }"));
 	}
 
-	// --------- new JUnit test -----------
+	// --------- new JUnit test Null Check-----------
 	@Test // DATAMONGO-850
 	void shouldNotTakeEmptyStringForLanguageField() {
 
@@ -68,6 +68,7 @@ class TextCriteriaUnitTests {
 	}
 
 
+
 	// --------- new JUnit test -----------
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldForPhraseCorrectlyForMatching() {
@@ -85,6 +86,27 @@ class TextCriteriaUnitTests {
 
 		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"bake coffee cake\" }"));
 	}
+
+
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldCreateSearchFieldCorrectlyForSingleTermCorrectly() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("bake");
+
+		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"bake\" }"));
+	}
+
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldThrowExceptionWhenTermDoesNotCompletelyMatch() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("bake");
+
+		assertThat(criteria.getCriteriaObject()).isNotEqualTo(searchObject("{ \"$search\" : \"coffee bake\" }"));
+	}
+
+
 
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldForPhraseCorrectly() {

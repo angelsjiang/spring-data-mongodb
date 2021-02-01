@@ -130,6 +130,11 @@
 			<artifactId>mongodb-driver-core</artifactId>
 			<version>${mongo}</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-mongodb</artifactId>
+			<version>${version}.RELEASE</version>
+		</dependency>
 	</dependencies>
 
 	<repositories>
