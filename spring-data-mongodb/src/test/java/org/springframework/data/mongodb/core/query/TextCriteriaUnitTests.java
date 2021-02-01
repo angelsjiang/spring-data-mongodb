@@ -107,6 +107,16 @@ class TextCriteriaUnitTests {
 	}
 
 
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldNotEqualWhenTermOrderDoesNotMatchInOrder() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("coffee", "bake", "cake");
+
+		assertThat(criteria.getCriteriaObject()).isNotEqualTo(searchObject("{ \"$search\" : \"cake coffee bake\" }"));
+	}
+
+
 
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldForPhraseCorrectly() {
@@ -117,6 +127,18 @@ class TextCriteriaUnitTests {
 				.isEqualTo(new Document("$search", "\"coffee cake\""));
 	}
 
+
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldCreateSearchFieldForLongPhraseCorrectly() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase("coffee cake chicken sandwich orange juice");
+
+		assertThat(DocumentTestUtils.getAsDocument(criteria.getCriteriaObject(), "$text"))
+				.isEqualTo(new Document("$search", "\"coffee cake chicken sandwich orange juice\""));
+	}
+
+
 	@Test // DATAMONGO-850
 	void shouldCreateNotFieldCorrectly() {
 
@@ -125,6 +147,7 @@ class TextCriteriaUnitTests {
 		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"-cake\" }"));
 	}
 
+
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldCorrectlyForNotMultipleTermsCorrectly() {
 
@@ -132,6 +155,17 @@ class TextCriteriaUnitTests {
 
 		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"-bake -coffee -cake\" }"));
 	}
+
+
+	// ------------ New JUnit Test -------------
+	@Test // DATAMONGO-850
+	void shouldNotPassIfOneTermMatches() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().notMatchingAny("bake", "coffee", "cake");
+
+		assertThat(criteria.getCriteriaObject()).isNotEqualTo(searchObject("{ \"$search\" : \"bake -coffee -cake\" }"));
+	}
+
 
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldForNotPhraseCorrectly() {
@@ -150,6 +184,17 @@ class TextCriteriaUnitTests {
 		assertThat(DocumentTestUtils.getAsDocument(criteria.getCriteriaObject(), "$text"))
 				.isEqualTo(new Document("$search", "coffee").append("$caseSensitive", true));
 	}
+
+	// ----------- New JUnit test -------------
+	@Test // DATAMONGO-1455
+	void caseSensitiveOperatorShouldBeSetCorrectlyAndThusNotEqual() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matching("coffee").caseSensitive(true);
+
+		assertThat(DocumentTestUtils.getAsDocument(criteria.getCriteriaObject(), "$text"))
+				.isNotEqualTo(new Document("$search", "coffee").append("$caseSensitive", false));
+	}
+
 
 	@Test // DATAMONGO-1456
 	void diacriticSensitiveOperatorShouldBeSetCorrectly() {
@@ -171,6 +216,17 @@ class TextCriteriaUnitTests {
 		assertThat(criteriaOne).isNotEqualTo(criteriaTwo.diacriticSensitive(false));
 		assertThat(criteriaOne.hashCode()).isNotEqualTo(criteriaTwo.diacriticSensitive(false).hashCode());
 	}
+
+
+	@Test // DATAMONGO-2504
+	void twoIdenticalCriteriaWithDiffCaseSensitiveShouldNotBeEqual() {
+
+		TextCriteria criteriaOne = TextCriteria.forDefaultLanguage().matching("coffee");
+		TextCriteria criteriaTwo = TextCriteria.forDefaultLanguage().matching("coffee");
+
+		assertThat(criteriaOne).isNotEqualTo(criteriaTwo.caseSensitive(false));
+	}
+
 
 	private Document searchObject(String json) {
 		return new Document("$text", Document.parse(json));
