@@ -15,12 +15,12 @@
  */
 package org.springframework.data.mongodb.core.query;
 
-import static org.assertj.core.api.Assertions.*;
-
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.data.mongodb.core.DocumentTestUtils;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 
 /**
  * Unit tests for {@link TextCriteria}.
@@ -46,6 +46,19 @@ class TextCriteriaUnitTests {
 		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$language\" : \"spanish\" }"));
 	}
 
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldNotTakeEmptyStringForLanguageField() {
+
+		try {
+			TextCriteria criteria = TextCriteria.forLanguage("");
+			fail("java.lang.IllegalArgumentException: Language must not be null or empty!");
+		} catch (IllegalArgumentException e) {
+			assertThat(e.getMessage());
+		}
+	}
+
+
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldForSingleTermCorrectly() {
 
@@ -53,6 +66,17 @@ class TextCriteriaUnitTests {
 
 		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"cake\" }"));
 	}
+
+
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldCreateSearchFieldForPhraseCorrectlyForMatching() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matching("coffee cake");
+
+		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"coffee cake\" }"));
+	}
+
 
 	@Test // DATAMONGO-850
 	void shouldCreateSearchFieldCorrectlyForMultipleTermsCorrectly() {
