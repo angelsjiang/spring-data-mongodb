@@ -107,6 +107,17 @@ public class TextQueryTests {
 	}
 
 	@Test // DATAMONGO-850
+	public void shouldNotFindDocumentsNotMatchingAnyWordOfGivenQuery() {
+
+		initWithDefaultDocuments();
+
+		List<FullTextDoc> result = template.find(new TextQuery("bake coffee cake"), FullTextDoc.class);
+		assertThat(result).hasSize(3);
+		assertThat(result).doesNotContain(SPANISH_MILK);
+	}
+
+
+	@Test // DATAMONGO-850
 	public void shouldNotFindDocumentsWhenQueryDoesNotMatchAnyDocumentInIndex() {
 
 		initWithDefaultDocuments();
@@ -157,6 +168,15 @@ public class TextQueryTests {
 		List<FullTextDoc> result = template.find(new TextQuery("bake coffee -cake"), FullTextDoc.class);
 		assertThat(result).hasSize(2);
 		assertThat(result).contains(BAKE, COFFEE);
+	}
+
+	@Test // DATAMONGO-850
+	public void shouldNotReturnAnythingIfOnlyHasNegatedTerm() {
+
+		initWithDefaultDocuments();
+
+		List<FullTextDoc> result = template.find(new TextQuery("-leche"), FullTextDoc.class);
+		assertThat(result).hasSize(0);
 	}
 
 	@Test // DATAMONGO-976
@@ -213,6 +233,27 @@ public class TextQueryTests {
 		assertThat(result).hasSize(1);
 		assertThat(result).containsExactly(CAKE);
 	}
+
+	@Test // DATAMONGO-850
+	public void AddedNewDocShouldApplySortingAndPaginationCorrectly() {
+
+		initWithDefaultDocuments();
+		FullTextDoc coffee2 = new FullTextDocBuilder().body("coffee2").build();
+		template.insert(coffee2);
+
+		// page 1
+		List<FullTextDoc> result = template.find(new TextQuery("bake coffee cake coffee2").sortByScore().with(PageRequest.of(0, 2)),
+				FullTextDoc.class);
+		assertThat(result).hasSize(2);
+		assertThat(result).containsExactly(BAKE, COFFEE);
+
+		// page 2
+		result = template.find(new TextQuery("bake coffee cake coffee2").sortByScore().with(PageRequest.of(1, 2)),
+				FullTextDoc.class);
+		assertThat(result).hasSize(2);
+		assertThat(result).containsExactly(CAKE, coffee2);
+	}
+
 
 	private void initWithDefaultDocuments() {
 		this.template.save(BAKE);
