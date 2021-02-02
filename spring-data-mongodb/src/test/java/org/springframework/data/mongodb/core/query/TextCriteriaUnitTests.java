@@ -99,21 +99,31 @@ class TextCriteriaUnitTests {
 
 	// --------- new JUnit test -----------
 	@Test // DATAMONGO-850
-	void shouldThrowExceptionWhenTermDoesNotCompletelyMatch() {
+	void shouldCreateSearchFieldCorrectlyForSingleCharCorrectly() {
 
-		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("bake");
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("b");
 
-		assertThat(criteria.getCriteriaObject()).isNotEqualTo(searchObject("{ \"$search\" : \"coffee bake\" }"));
+		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"b\" }"));
 	}
 
 
 	// --------- new JUnit test -----------
 	@Test // DATAMONGO-850
-	void shouldNotEqualWhenTermOrderDoesNotMatchInOrder() {
+	void shouldCreateSearchFieldCorrectlyForPhrase() {
 
-		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("coffee", "bake", "cake");
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("coffee lollipop");
 
-		assertThat(criteria.getCriteriaObject()).isNotEqualTo(searchObject("{ \"$search\" : \"cake coffee bake\" }"));
+		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"coffee lollipop\" }"));
+	}
+
+
+	// --------- new JUnit test -----------
+	@Test // DATAMONGO-850
+	void shouldPassWhenMatchingTheGivenDigits() {
+
+		TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingAny("123", "321");
+
+		assertThat(criteria.getCriteriaObject()).isEqualTo(searchObject("{ \"$search\" : \"123 321\" }"));
 	}
 
 
