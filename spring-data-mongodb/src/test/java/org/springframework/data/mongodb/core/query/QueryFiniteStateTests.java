@@ -27,4 +27,12 @@ public class QueryFiniteStateTests {
         assertThat(q.getQueryObject()).isEqualTo(Document.parse("{\"name\" : \"Thomas\", \"age\" : { \"$lt\" : 80}}"));
         assertThat(q.getSkip()).isEqualTo(5);
     }
+
+    @Test
+    void testQuerySetHint() {
+        Query q = new Query(where("name").is("Thomas").and("age").lt(80));
+        q.withHint("this is a hint");
+        assertThat(q.getQueryObject()).isEqualTo(Document.parse("{\"name\" : \"Thomas\", \"age\" : { \"$lt\" : 80}}"));
+        assertThat(q.getHint()).isEqualTo("this is a hint");
+    }
 }
