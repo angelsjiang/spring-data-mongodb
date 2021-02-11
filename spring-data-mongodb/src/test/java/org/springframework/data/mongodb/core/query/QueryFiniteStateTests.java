@@ -35,4 +35,13 @@ public class QueryFiniteStateTests {
         assertThat(q.getQueryObject()).isEqualTo(Document.parse("{\"name\" : \"Thomas\", \"age\" : { \"$lt\" : 80}}"));
         assertThat(q.getHint()).isEqualTo("this is a hint");
     }
+
+    @Test
+    void testQuerryAddCriteriaAndSetSkip() {
+        Query q = new Query(where("name").is("Thomas").and("age").lt(80));
+        q.addCriteria(where("value").is("1"));
+        q.skip(5);
+        assertThat(q.getQueryObject()).isEqualTo(Document.parse("{\"name\" : \"Thomas\", \"age\" : { \"$lt\" : 80}, \"value\" : \"1\"}"));
+        assertThat(q.getSkip()).isEqualTo(5);
+    }
 }
