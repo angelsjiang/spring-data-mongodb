@@ -33,7 +33,7 @@ public class QueryFiniteStateTests {
     }
 
     @Test
-    void testQuerySetSkip() {
+    void testQuerySkip() {
         Query q = new Query(where("name").is("Thomas").and("age").lt(80));
         q.skip(5);
         assertThat(q.getQueryObject()).isEqualTo(Document.parse("{\"name\" : \"Thomas\", \"age\" : { \"$lt\" : 80}}"));
@@ -41,7 +41,7 @@ public class QueryFiniteStateTests {
     }
 
     @Test
-    void testQuerySetHint() {
+    void testQueryWithHint() {
         Query q = new Query(where("name").is("Thomas").and("age").lt(80));
         q.withHint("this is a hint");
         assertThat(q.getQueryObject()).isEqualTo(Document.parse("{\"name\" : \"Thomas\", \"age\" : { \"$lt\" : 80}}"));
@@ -49,7 +49,7 @@ public class QueryFiniteStateTests {
     }
 
     @Test
-    void testQuerryAddCriteriaAndSetSkip() {
+    void testQueryAddCriteriaAndSetSkip() {
         Query q = new Query(where("name").is("Thomas").and("age").lt(80));
         q.addCriteria(where("value").is("1"));
         q.skip(5);
