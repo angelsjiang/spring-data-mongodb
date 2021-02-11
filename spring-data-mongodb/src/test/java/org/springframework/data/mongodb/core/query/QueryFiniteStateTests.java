@@ -6,7 +6,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.springframework.data.mongodb.core.query.Criteria.*;
 import static org.springframework.data.mongodb.core.query.Query.*;
 
-import java.sql.Array;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
