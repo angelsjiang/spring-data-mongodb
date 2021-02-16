@@ -47,6 +47,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.MongoPersistentEntity;
 import org.springframework.data.mongodb.core.mapping.MongoPersistentProperty;
 import org.springframework.data.mongodb.util.BsonUtils;
+import org.springframework.data.mongodb.util.DotPath;
 import org.springframework.data.spel.EvaluationContextProvider;
 import org.springframework.data.util.TypeInformation;
 import org.springframework.expression.EvaluationContext;
@@ -135,8 +136,9 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 
 		try {
 			if (persistentProperty.isEntity()) {
-				indexes.addAll(resolveIndexForClass(persistentProperty.getTypeInformation().getActualType(),
-						persistentProperty.getFieldName(), Path.of(persistentProperty), root.getCollection(), guard));
+				indexes.addAll(resolveIndexForEntity(mappingContext.getPersistentEntity(persistentProperty),
+						persistentProperty.isEmbedded() ? "" : persistentProperty.getFieldName(), Path.of(persistentProperty),
+						root.getCollection(), guard));
 			}
 
 			List<IndexDefinitionHolder> indexDefinitions = createIndexDefinitionHolderForProperty(
@@ -160,12 +162,16 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 	 * @return List of {@link IndexDefinitionHolder} representing indexes for given type and its referenced property
 	 *         types. Will never be {@code null}.
 	 */
-	private List<IndexDefinitionHolder> resolveIndexForClass(final TypeInformation<?> type, final String dotPath,
-			final Path path, final String collection, final CycleGuard guard) {
+	private List<IndexDefinitionHolder> resolveIndexForClass( TypeInformation<?> type,  String dotPath,
+			 Path path,  String collection,  CycleGuard guard) {
 
-		MongoPersistentEntity<?> entity = mappingContext.getRequiredPersistentEntity(type);
+		return resolveIndexForEntity(mappingContext.getRequiredPersistentEntity(type), dotPath, path, collection, guard);
+	}
 
-		final List<IndexDefinitionHolder> indexInformation = new ArrayList<>();
+	private List<IndexDefinitionHolder> resolveIndexForEntity(MongoPersistentEntity<?> entity,  String dotPath,
+			 Path path,  String collection,  CycleGuard guard) {
+
+		List<IndexDefinitionHolder> indexInformation = new ArrayList<>();
 		indexInformation.addAll(potentiallyCreateCompoundIndexDefinitions(dotPath, collection, entity));
 
 		entity.doWithProperties((PropertyHandler<MongoPersistentProperty>) property -> this
@@ -179,21 +185,25 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 	private void guardAndPotentiallyAddIndexForProperty(MongoPersistentProperty persistentProperty, String dotPath,
 			Path path, String collection, List<IndexDefinitionHolder> indexes, CycleGuard guard) {
 
-		String propertyDotPath = (StringUtils.hasText(dotPath) ? dotPath + "." : "") + persistentProperty.getFieldName();
+		DotPath propertyDotPath = DotPath.from(dotPath);
+
+		if (!persistentProperty.isEmbedded()) {
+			propertyDotPath = propertyDotPath.append(persistentProperty.getFieldName());
+		}
 
 		Path propertyPath = path.append(persistentProperty);
 		guard.protect(persistentProperty, propertyPath);
 
 		if (persistentProperty.isEntity()) {
 			try {
-				indexes.addAll(resolveIndexForClass(persistentProperty.getTypeInformation().getActualType(), propertyDotPath,
+				indexes.addAll(resolveIndexForEntity(mappingContext.getPersistentEntity(persistentProperty), propertyDotPath.toString(),
 						propertyPath, collection, guard));
 			} catch (CyclicPropertyReferenceException e) {
 				LOGGER.info(e.getMessage());
 			}
 		}
 
-		List<IndexDefinitionHolder> indexDefinitions = createIndexDefinitionHolderForProperty(propertyDotPath, collection,
+		List<IndexDefinitionHolder> indexDefinitions = createIndexDefinitionHolderForProperty(propertyDotPath.toString(), collection,
 				persistentProperty);
 
 		if (!indexDefinitions.isEmpty()) {
@@ -205,6 +215,13 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 			MongoPersistentProperty persistentProperty) {
 
 		List<IndexDefinitionHolder> indices = new ArrayList<>(2);
+
+		if (persistentProperty.isEmbedded() && (persistentProperty.isAnnotationPresent(Indexed.class)
+				|| persistentProperty.isAnnotationPresent(HashIndexed.class)
+				|| persistentProperty.isAnnotationPresent(GeoSpatialIndexed.class))) {
+			throw new InvalidDataAccessApiUsageException(
+					String.format("Index annotation not allowed on embedded object for path '%s'.", dotPath));
+		}
 
 		if (persistentProperty.isAnnotationPresent(Indexed.class)) {
 			indices.add(createIndexDefinition(dotPath, collection, persistentProperty));
@@ -254,7 +271,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 		}
 
 		try {
-			appendTextIndexInformation("", Path.empty(), indexDefinitionBuilder, root,
+			appendTextIndexInformation(DotPath.empty(), Path.empty(), indexDefinitionBuilder, root,
 					new TextIndexIncludeOptions(IncludeStrategy.DEFAULT), new CycleGuard());
 		} catch (CyclicPropertyReferenceException e) {
 			LOGGER.info(e.getMessage());
@@ -275,9 +292,9 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 
 	}
 
-	private void appendTextIndexInformation(final String dotPath, final Path path,
-			final TextIndexDefinitionBuilder indexDefinitionBuilder, final MongoPersistentEntity<?> entity,
-			final TextIndexIncludeOptions includeOptions, final CycleGuard guard) {
+	private void appendTextIndexInformation(DotPath dotPath, Path path,
+			TextIndexDefinitionBuilder indexDefinitionBuilder, MongoPersistentEntity<?> entity,
+			TextIndexIncludeOptions includeOptions, CycleGuard guard) {
 
 		entity.doWithProperties(new PropertyHandler<MongoPersistentProperty>() {
 
@@ -286,7 +303,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 
 				guard.protect(persistentProperty, path);
 
-				if (persistentProperty.isExplicitLanguageProperty() && !StringUtils.hasText(dotPath)) {
+				if (persistentProperty.isExplicitLanguageProperty() && dotPath.isEmpty()) {
 					indexDefinitionBuilder.withLanguageOverride(persistentProperty.getFieldName());
 				}
 
@@ -294,8 +311,8 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 
 				if (includeOptions.isForce() || indexed != null || persistentProperty.isEntity()) {
 
-					String propertyDotPath = (StringUtils.hasText(dotPath) ? dotPath + "." : "")
-							+ persistentProperty.getFieldName();
+					DotPath propertyDotPath = dotPath
+							.append(persistentProperty.getFieldName());
 
 					Path propertyPath = path.append(persistentProperty);
 
@@ -308,7 +325,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 						TextIndexIncludeOptions optionsForNestedType = includeOptions;
 						if (!IncludeStrategy.FORCE.equals(includeOptions.getStrategy()) && indexed != null) {
 							optionsForNestedType = new TextIndexIncludeOptions(IncludeStrategy.FORCE,
-									new TextIndexedFieldSpec(propertyDotPath, weight));
+									new TextIndexedFieldSpec(propertyDotPath.toString(), weight));
 						}
 
 						try {
@@ -321,7 +338,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 									entity.getName()), e);
 						}
 					} else if (includeOptions.isForce() || indexed != null) {
-						indexDefinitionBuilder.onField(propertyDotPath, weight);
+						indexDefinitionBuilder.onField(propertyDotPath.toString(), weight);
 					}
 				}
 
@@ -482,7 +499,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 		return new IndexDefinitionHolder(dotPath, indexDefinition, collection);
 	}
 
-	private PartialIndexFilter evaluatePartialFilter(String filterExpression, PersistentEntity<?,?> entity) {
+	private PartialIndexFilter evaluatePartialFilter(String filterExpression, PersistentEntity<?, ?> entity) {
 
 		Object result = evaluate(filterExpression, getEvaluationContextForProperty(entity));
 
@@ -492,7 +509,6 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 
 		return PartialIndexFilter.of(BsonUtils.parse(filterExpression, null));
 	}
-
 
 	/**
 	 * Creates {@link HashedIndex} wrapped in {@link IndexDefinitionHolder} out of {@link HashIndexed} for a given
@@ -633,7 +649,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 
 		MongoPersistentProperty property = association.getInverse();
 
-		String propertyDotPath = (StringUtils.hasText(path) ? path + "." : "") + property.getFieldName();
+		DotPath propertyDotPath = DotPath.from(path).append(property.getFieldName());
 
 		if (property.isAnnotationPresent(GeoSpatialIndexed.class) || property.isAnnotationPresent(TextIndexed.class)) {
 			throw new MappingException(
@@ -641,7 +657,7 @@ public class MongoPersistentEntityIndexResolver implements IndexResolver {
 							propertyDotPath));
 		}
 
-		List<IndexDefinitionHolder> indexDefinitions = createIndexDefinitionHolderForProperty(propertyDotPath, collection,
+		List<IndexDefinitionHolder> indexDefinitions = createIndexDefinitionHolderForProperty(propertyDotPath.toString(), collection,
 				property);
 
 		if (!indexDefinitions.isEmpty()) {

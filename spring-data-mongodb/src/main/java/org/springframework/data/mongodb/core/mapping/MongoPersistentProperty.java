@@ -124,6 +124,14 @@ public interface MongoPersistentProperty extends PersistentProperty<MongoPersist
 	}
 
 	/**
+	 * @return {@literal true} if the property should be embedded.
+	 * @since 3.2
+	 */
+	default boolean isEmbedded() {
+		return isEntity() && isAnnotationPresent(Embedded.class);
+	}
+
+	/**
 	 * Simple {@link Converter} implementation to transform a {@link MongoPersistentProperty} into its field name.
 	 *
 	 * @author Oliver Gierke
@@ -137,7 +145,10 @@ public interface MongoPersistentProperty extends PersistentProperty<MongoPersist
 		 * @see org.springframework.core.convert.converter.Converter#convert(java.lang.Object)
 		 */
 		public String convert(MongoPersistentProperty source) {
-			return source.getFieldName();
+			if (!source.isEmbedded()) {
+				return source.getFieldName();
+			}
+			return "";
 		}
 	}
 }

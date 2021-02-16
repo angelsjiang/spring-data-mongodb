@@ -16,3 +16,4 @@ atlassian-ide-plugin.xml
 /.gradle/
 /.idea/
 *.graphml
+/.metadata/

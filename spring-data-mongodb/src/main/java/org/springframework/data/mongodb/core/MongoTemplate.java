@@ -28,7 +28,6 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -716,12 +715,18 @@ public class MongoTemplate implements MongoOperations, ApplicationContextAware, 
 		});
 	}
 
+
+	@Override
+	public IndexOperations indexOps(String collectionName) {
+		return indexOps(collectionName, null);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.springframework.data.mongodb.core.ExecutableInsertOperation#indexOps(java.lang.String)
 	 */
-	public IndexOperations indexOps(String collectionName) {
-		return new DefaultIndexOperations(this, collectionName, null);
+	public IndexOperations indexOps(String collectionName, @Nullable Class<?> type) {
+		return new DefaultIndexOperations(this, collectionName, type);
 	}
 
 	/*
@@ -729,7 +734,7 @@ public class MongoTemplate implements MongoOperations, ApplicationContextAware, 
 	 * @see org.springframework.data.mongodb.core.ExecutableInsertOperation#indexOps(java.lang.Class)
 	 */
 	public IndexOperations indexOps(Class<?> entityClass) {
-		return new DefaultIndexOperations(this, getCollectionName(entityClass), entityClass);
+		return indexOps(getCollectionName(entityClass), entityClass);
 	}
 
 	/*
@@ -3463,7 +3468,20 @@ public class MongoTemplate implements MongoOperations, ApplicationContextAware, 
 		}
 	}
 
+	/**
+	 * @deprecated since 3.1.4. Use {@link #getMongoDatabaseFactory()} instead.
+	 * @return the {@link MongoDatabaseFactory} in use.
+	 */
+	@Deprecated
 	public MongoDatabaseFactory getMongoDbFactory() {
+		return getMongoDatabaseFactory();
+	}
+
+	/**
+	 * @return the {@link MongoDatabaseFactory} in use.
+	 * @since 3.1.4
+	 */
+	public MongoDatabaseFactory getMongoDatabaseFactory() {
 		return mongoDbFactory;
 	}
 
