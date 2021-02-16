@@ -254,6 +254,33 @@ public class TextQueryTests {
 		assertThat(result).containsExactly(CAKE, coffee2);
 	}
 
+	@Test // new test for includeScore with fieldName argument
+	public void shouldInlcudeScoreCorrecltyWithFieldName() {
+
+		initWithDefaultDocuments();
+
+		TextQuery test = new TextQuery("bake coffee -cake").includeScore("test").sortByScore();
+		List<FullTextDoc> result = template.find(test,
+				FullTextDoc.class);
+
+		assertThat(test.getScoreFieldName()).isEqualTo("test");
+		assertThat(result).hasSize(2);
+		for (FullTextDoc scoredDoc : result) {
+			assertThat(scoredDoc.score > 0F).isTrue();
+
+		}
+	}
+
+	@Test // new test for isSorted method
+	public void shouldSortCorrectly() {
+
+		initWithDefaultDocuments();
+
+		TextQuery test = new TextQuery("bake coffee -cake").includeScore("test").sortByScore();
+
+		assertThat(test.isSorted()).isTrue();
+	}
+
 
 	private void initWithDefaultDocuments() {
 		this.template.save(BAKE);
