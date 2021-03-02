@@ -151,6 +151,19 @@ class CriteriaTests {
 				.containsExactlyInAnyOrder(FIFTY_FOUR, TWENTY_INT, TWENTY_FLOAT, ONE_HUNDRED_TWO);
 	}
 
+	/**
+	 * testable design test
+	 */
+	@Test
+	public void CriteriabyExampletest(){
+		TestExample t = new TestExample();
+
+		Criteria c = Criteria.byExample1(t);
+
+		System.out.println(c.getCriteriaObject());
+		assertThat(c.getCriteriaObject().get("$example").toString()).isEqualTo("TestExample{confirm}");
+	}
+
 	@Data
 	@EqualsAndHashCode(exclude = "value")
 	@AllArgsConstructor

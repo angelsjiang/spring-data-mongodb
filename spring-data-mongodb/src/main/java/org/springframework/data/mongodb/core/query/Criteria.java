@@ -141,6 +141,15 @@ public class Criteria implements CriteriaDefinition {
 	}
 
 	/**
+	 * rewrite testable design
+	 * @param TestExample
+	 * @return Criteria
+	 */
+	public static Criteria byExample1(TestExample<?> example) {
+		return new Criteria().alike(example);
+	}
+
+	/**
 	 * Static factory method to create a {@link Criteria} matching documents against a given structure defined by the
 	 * {@link MongoJsonSchema} using ({@code $jsonSchema}) operator.
 	 *
@@ -619,6 +628,24 @@ public class Criteria implements CriteriaDefinition {
 	 * @since 1.8
 	 */
 	public Criteria alike(Example<?> sample) {
+
+		if (StringUtils.hasText(this.getKey())) {
+
+			criteria.put("$example", sample);
+			return this;
+		}
+
+		Criteria exampleCriteria = new Criteria();
+		exampleCriteria.criteria.put("$example", sample);
+		return registerCriteriaChainElement(exampleCriteria);
+	}
+
+	/**
+	 * copy for alike for testable design
+	 * @param TestExample
+	 * @return Criteria
+	 */
+	public Criteria alike(TestExample<?> sample) {
 
 		if (StringUtils.hasText(this.getKey())) {
 
