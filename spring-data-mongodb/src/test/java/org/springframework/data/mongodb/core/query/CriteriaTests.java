@@ -161,7 +161,7 @@ class CriteriaTests {
 		Criteria c = Criteria.byExample1(t);
 
 		System.out.println(c.getCriteriaObject());
-		assertThat(c.getCriteriaObject().get("$example").toString()).isEqualTo("TestExample{confirm}");
+		assertThat(((TestExample)c.getCriteriaObject().get("$example")).getConfirm()).isEqualTo("confirm");
 	}
 
 	@Data
