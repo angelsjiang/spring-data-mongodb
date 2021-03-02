@@ -146,7 +146,7 @@ public class Criteria implements CriteriaDefinition {
 	 * @return Criteria
 	 */
 	public static Criteria byExample1(TestExample<?> example) {
-		return new Criteria().alike(example);
+		return new Criteria().alike1(example);
 	}
 
 	/**
@@ -645,7 +645,7 @@ public class Criteria implements CriteriaDefinition {
 	 * @param TestExample
 	 * @return Criteria
 	 */
-	public Criteria alike(TestExample<?> sample) {
+	public Criteria alike1(TestExample<?> sample) {
 
 		if (StringUtils.hasText(this.getKey())) {
 
